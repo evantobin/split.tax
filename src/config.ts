@@ -28,7 +28,7 @@ export const defaultTaxSettings = {
 };
 
 // Function to get user tax settings for any state
-export function getTaxSettingsForState(stateCode: string, filingStatus: 'single' | 'married' = 'single') {
+export function getTaxSettingsForState(_stateCode: string, filingStatus: 'single' | 'married' = 'single') {
     return {
         ...defaultTaxSettings,
         filingStatus

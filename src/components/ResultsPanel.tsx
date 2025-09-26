@@ -44,7 +44,7 @@ const generatePDF = (results: ResultData[] | null, mnSettings: TaxSettings, form
       }
     }
 
-    results.forEach(({ period, result }) => {
+    results.forEach(({ period }) => {
       const ppStart = new Date(period.payPeriodStart + 'T00:00:00');
       const ppEnd = new Date(period.payPeriodEnd + 'T00:00:00');
       const primaryVisitStart = new Date(formData.visitingDates.start + 'T00:00:00');
@@ -139,7 +139,7 @@ const generatePDF = (results: ResultData[] | null, mnSettings: TaxSettings, form
       monthGroups[monthKey].push(allocation);
     });
 
-    return Object.entries(monthGroups).map(([monthKey, allocations]) => {
+    return Object.entries(monthGroups).map(([_monthKey, allocations]) => {
       const firstDate = allocations[0].date;
       const monthName = firstDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       

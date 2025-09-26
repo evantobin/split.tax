@@ -56,7 +56,7 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
     }
 
     // Process each pay period
-    results.forEach(({ period, result }) => {
+    results.forEach(({ period }) => {
       const ppStart = new Date(period.payPeriodStart + 'T00:00:00');
       const ppEnd = new Date(period.payPeriodEnd + 'T00:00:00');
       const primaryVisitStart = new Date(formData.visitingDates.start + 'T00:00:00');
@@ -141,10 +141,6 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
           month,
           days: []
         };
-        
-        // Fill the calendar grid (weekdays only)
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
         
         // Initialize calendar grid (5 weekdays per week, up to 6 weeks)
         for (let week = 0; week < 6; week++) {
