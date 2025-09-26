@@ -17,6 +17,9 @@ export interface Bonus {
   amount: number | string;
   state: string;
   date: string;
+  type: 'services-rendered' | 'sign-on';
+  bonusPeriodStart?: string;
+  bonusPeriodEnd?: string;
 }
 
 export interface DaysInOtherStates {

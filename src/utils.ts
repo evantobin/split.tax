@@ -111,24 +111,97 @@ export function calculateAllocation(
         allocations[state].regularPay = (allocations[state].days || 0) * dailyRate;
     }
     
-    // Each bonus is allocated to the state the person was working in on that date
+    // Handle bonus allocation based on bonus type
     periodBonuses.forEach(bonus => {
-        const bonusDate = new Date(bonus.date + 'T00:00:00');
-        const dateStr = bonusDate.toISOString().split('T')[0];
+        const bonusAmount = parseFloat(String(bonus.amount || 0));
         
-        // Determine which state the person was working in on this date
-        let workingState = '';
-        if (otherStateDaysMap.has(dateStr)) {
-            workingState = otherStateDaysMap.get(dateStr)!;
-        } else if (bonusDate >= primaryVisitStart && bonusDate <= primaryVisitEnd) {
-            workingState = primaryState;
-        }
-        
-        if (workingState) {
+        if (bonus.type === 'sign-on') {
+            // Sign-on bonuses are applied to the state where the person was working on the date received
+            const bonusDate = new Date(bonus.date + 'T00:00:00');
+            const dateStr = bonusDate.toISOString().split('T')[0];
+            
+            let workingState = primaryState; // Default to primary state
+            if (otherStateDaysMap.has(dateStr)) {
+                workingState = otherStateDaysMap.get(dateStr)!;
+            } else if (bonusDate >= primaryVisitStart && bonusDate <= primaryVisitEnd) {
+                workingState = primaryState;
+            }
+            
             if (!allocations[workingState]) {
                 allocations[workingState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
             }
-            allocations[workingState].bonus += parseFloat(String(bonus.amount || 0));
+            allocations[workingState].bonus += bonusAmount;
+        } else if (bonus.type === 'services-rendered') {
+            // Services rendered bonuses are split based on days worked in each state during the bonus period
+            const bonusPeriodStart = bonus.bonusPeriodStart ? new Date(bonus.bonusPeriodStart + 'T00:00:00') : ppStart;
+            const bonusPeriodEnd = bonus.bonusPeriodEnd ? new Date(bonus.bonusPeriodEnd + 'T00:00:00') : ppEnd;
+            
+            // Count days worked in each state during the bonus period
+            let bonusPeriodDaysInPrimary = 0;
+            const bonusPeriodDaysInOtherStates: Record<string, number> = {};
+            let totalBonusPeriodDays = 0;
+            
+            for (let d = new Date(Math.max(bonusPeriodStart.getTime(), ppStart.getTime())); 
+                 d <= new Date(Math.min(bonusPeriodEnd.getTime(), ppEnd.getTime())); 
+                 d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                if (!isWeekday(d)) continue;
+                
+                if (otherStateDaysMap.has(dateStr)) {
+                    const state = otherStateDaysMap.get(dateStr)!;
+                    bonusPeriodDaysInOtherStates[state] = (bonusPeriodDaysInOtherStates[state] || 0) + 1;
+                    totalBonusPeriodDays++;
+                } else if (d >= primaryVisitStart && d <= primaryVisitEnd) {
+                    bonusPeriodDaysInPrimary++;
+                    totalBonusPeriodDays++;
+                }
+            }
+            
+            // Allocate bonus proportionally to each state based on days worked
+            if (totalBonusPeriodDays > 0) {
+                // Allocate to primary state
+                if (bonusPeriodDaysInPrimary > 0) {
+                    const primaryAllocation = (bonusPeriodDaysInPrimary / totalBonusPeriodDays) * bonusAmount;
+                    if (!allocations[primaryState]) {
+                        allocations[primaryState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
+                    }
+                    allocations[primaryState].bonus += primaryAllocation;
+                }
+                
+                // Allocate to other states
+                for (const state in bonusPeriodDaysInOtherStates) {
+                    const stateAllocation = (bonusPeriodDaysInOtherStates[state] / totalBonusPeriodDays) * bonusAmount;
+                    if (!allocations[state]) {
+                        allocations[state] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
+                    }
+                    allocations[state].bonus += stateAllocation;
+                }
+            } else {
+                // If no working days found in bonus period, allocate to primary state
+                if (!allocations[primaryState]) {
+                    allocations[primaryState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
+                }
+                allocations[primaryState].bonus += bonusAmount;
+            }
+        } else {
+            // Fallback for bonuses without type (backwards compatibility)
+            const bonusDate = new Date(bonus.date + 'T00:00:00');
+            const dateStr = bonusDate.toISOString().split('T')[0];
+            
+            // Determine which state the person was working in on this date
+            let workingState = '';
+            if (otherStateDaysMap.has(dateStr)) {
+                workingState = otherStateDaysMap.get(dateStr)!;
+            } else if (bonusDate >= primaryVisitStart && bonusDate <= primaryVisitEnd) {
+                workingState = primaryState;
+            }
+            
+            if (workingState) {
+                if (!allocations[workingState]) {
+                    allocations[workingState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
+                }
+                allocations[workingState].bonus += bonusAmount;
+            }
         }
     });
     

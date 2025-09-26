@@ -96,10 +96,49 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
         // Calculate regular income for this day
         regularIncome = dailyRegularRate;
         
-        // Add any bonuses for this specific date (bonuses go to whatever state person was working in)
+        // Add any bonuses for this specific date
         formData.bonuses.forEach(bonus => {
-          if (bonus.date === dateStr) {
-            bonusIncome += parseFloat(String(bonus.amount || 0));
+          const bonusDate = new Date(bonus.date + 'T00:00:00');
+          
+          if (bonus.type === 'sign-on') {
+            // Sign-on bonuses appear only on the date received
+            if (bonus.date === dateStr) {
+              bonusIncome += parseFloat(String(bonus.amount || 0));
+            }
+          } else if (bonus.type === 'services-rendered') {
+            // Services rendered bonuses are distributed across the bonus period
+            const bonusPeriodStart = bonus.bonusPeriodStart 
+              ? new Date(bonus.bonusPeriodStart + 'T00:00:00') 
+              : new Date(period.payPeriodStart + 'T00:00:00');
+            const bonusPeriodEnd = bonus.bonusPeriodEnd 
+              ? new Date(bonus.bonusPeriodEnd + 'T00:00:00') 
+              : new Date(period.payPeriodEnd + 'T00:00:00');
+            
+            // Check if current date is within bonus period
+            if (d >= bonusPeriodStart && d <= bonusPeriodEnd) {
+              // Calculate total working days in bonus period that intersect with this pay period
+              let bonusPeriodWorkingDays = 0;
+              for (let bd = new Date(Math.max(bonusPeriodStart.getTime(), ppStart.getTime())); 
+                   bd <= new Date(Math.min(bonusPeriodEnd.getTime(), ppEnd.getTime())); 
+                   bd.setDate(bd.getDate() + 1)) {
+                if (!isWeekday(bd)) continue;
+                
+                const bonusDateStr = bd.toISOString().split('T')[0];
+                if (otherStateDaysMap.has(bonusDateStr) || (bd >= primaryVisitStart && bd <= primaryVisitEnd)) {
+                  bonusPeriodWorkingDays++;
+                }
+              }
+              
+              // Distribute bonus amount across working days
+              if (bonusPeriodWorkingDays > 0) {
+                bonusIncome += parseFloat(String(bonus.amount || 0)) / bonusPeriodWorkingDays;
+              }
+            }
+          } else {
+            // Fallback for bonuses without type (backwards compatibility)
+            if (bonus.date === dateStr) {
+              bonusIncome += parseFloat(String(bonus.amount || 0));
+            }
           }
         });
         
