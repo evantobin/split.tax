@@ -1,0 +1,197 @@
+html, body { 
+    height: 100%; 
+    margin: 0; 
+    padding: 0; 
+}
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: #f8fafc; 
+}
+
+#root { 
+    height: 100vh; 
+    width: 100vw; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+/* Layout structure */
+.app-container { 
+    display: flex; 
+    flex-direction: column; 
+    height: 100vh; 
+}
+
+.header-bar { 
+    background: white; 
+    border-bottom: 1px solid #e5e7eb; 
+    padding: 1rem 2rem; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    flex-shrink: 0; 
+}
+
+.main-content { 
+    display: flex; 
+    flex: 1; 
+    overflow: hidden; 
+}
+
+.sidebar { 
+    width: 400px; 
+    background: white; 
+    border-right: 1px solid #e5e7eb; 
+    overflow-y: auto; 
+    flex-shrink: 0; 
+}
+
+.content-panel { 
+    flex: 1; 
+    background: #f8fafc; 
+    overflow-y: auto; 
+}
+
+.sidebar-inner { 
+    padding: 1.5rem; 
+}
+
+.content-inner { 
+    padding: 1.5rem; 
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .main-content { 
+        flex-direction: column; 
+    }
+    .sidebar { 
+        width: 100%; 
+        height: 50%; 
+        border-right: none; 
+        border-bottom: 1px solid #e5e7eb; 
+    }
+    .content-panel { 
+        height: 50%; 
+    }
+}
+
+.result-card { 
+    opacity: 0; 
+    transform: translateY(20px); 
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out; 
+}
+
+.result-card.visible { 
+    opacity: 1; 
+    transform: translateY(0); 
+}
+
+.state-label { 
+    font-size: 1.125rem; 
+    font-weight: 600; 
+}
+
+.state-amount { 
+    font-size: 2.25rem; 
+    font-weight: 700; 
+}
+
+.input-field { 
+    margin-top: 0.25rem; 
+    display: block; 
+    width: 100%; 
+    padding: 0.5rem; 
+    border: 1px solid #d1d5db; 
+    border-radius: 0.375rem; 
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); 
+}
+
+.form-section { 
+    border-bottom-width: 1px; 
+    padding-bottom: 0.5rem; 
+    margin-bottom: 1rem; 
+}
+
+.add-btn { 
+    margin-top: 0.5rem; 
+    font-size: 0.875rem; 
+    color: #0284c7; 
+    font-weight: 500; 
+    cursor: pointer; 
+}
+
+.add-btn:hover { 
+    color: #0369a1; 
+}
+
+.spinner { 
+    border: 4px solid rgba(0, 0, 0, 0.1); 
+    width: 36px; 
+    height: 36px; 
+    border-radius: 50%; 
+    border-left-color: #0ea5e9; 
+    animation: spin 1s ease infinite; 
+}
+
+@keyframes spin { 
+    0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); } 
+}
+
+/* Header buttons */
+.header-btn { 
+    padding: 0.5rem 1rem; 
+    border-radius: 0.375rem; 
+    font-weight: 500; 
+    font-size: 0.875rem; 
+    transition: all 0.2s; 
+    border: none; 
+    cursor: pointer; 
+}
+
+.header-btn-primary { 
+    background: #0ea5e9; 
+    color: white; 
+}
+
+.header-btn-primary:hover { 
+    background: #0284c7; 
+}
+
+.header-btn-secondary { 
+    background: #6b7280; 
+    color: white; 
+}
+
+.header-btn-secondary:hover { 
+    background: #4b5563; 
+}
+
+.header-btn-success { 
+    background: #10b981; 
+    color: white; 
+}
+
+.header-btn-success:hover { 
+    background: #059669; 
+}
+
+.header-btn-warning { 
+    background: #f59e0b; 
+    color: white; 
+}
+
+.header-btn-warning:hover { 
+    background: #d97706; 
+}
+
+.header-btn-danger { 
+    background: #ef4444; 
+    color: white; 
+}
+
+.header-btn-danger:hover { 
+    background: #dc2626; 
+}
