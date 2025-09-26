@@ -111,13 +111,24 @@ export function calculateAllocation(
         allocations[state].regularPay = (allocations[state].days || 0) * dailyRate;
     }
     
-    // Each bonus is its own gross pay, allocated to the state for its date
+    // Each bonus is allocated to the state the person was working in on that date
     periodBonuses.forEach(bonus => {
-        if (bonus.state) {
-            if (!allocations[bonus.state]) {
-                allocations[bonus.state] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
+        const bonusDate = new Date(bonus.date + 'T00:00:00');
+        const dateStr = bonusDate.toISOString().split('T')[0];
+        
+        // Determine which state the person was working in on this date
+        let workingState = '';
+        if (otherStateDaysMap.has(dateStr)) {
+            workingState = otherStateDaysMap.get(dateStr)!;
+        } else if (bonusDate >= primaryVisitStart && bonusDate <= primaryVisitEnd) {
+            workingState = primaryState;
+        }
+        
+        if (workingState) {
+            if (!allocations[workingState]) {
+                allocations[workingState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
             }
-            allocations[bonus.state].bonus += parseFloat(String(bonus.amount || 0));
+            allocations[workingState].bonus += parseFloat(String(bonus.amount || 0));
         }
     });
     

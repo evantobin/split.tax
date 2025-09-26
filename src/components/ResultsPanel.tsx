@@ -81,9 +81,9 @@ const generatePDF = (results: ResultData[] | null, mnSettings: TaxSettings, form
         
         income = dailyRegularRate;
         
-        // Add bonuses for this date
+        // Add bonuses for this date (bonuses go to whatever state person was working in)
         formData.bonuses.forEach(bonus => {
-          if (bonus.date === dateStr && bonus.state === dayState) {
+          if (bonus.date === dateStr) {
             income += parseFloat(String(bonus.amount || 0));
           }
         });

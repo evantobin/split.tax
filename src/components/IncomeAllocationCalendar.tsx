@@ -96,9 +96,9 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
         // Calculate regular income for this day
         regularIncome = dailyRegularRate;
         
-        // Add any bonuses for this specific date
+        // Add any bonuses for this specific date (bonuses go to whatever state person was working in)
         formData.bonuses.forEach(bonus => {
-          if (bonus.date === dateStr && bonus.state === dayState) {
+          if (bonus.date === dateStr) {
             bonusIncome += parseFloat(String(bonus.amount || 0));
           }
         });
