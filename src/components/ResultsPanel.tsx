@@ -2,6 +2,7 @@ import React from 'react';
 import type { ResultData, TaxSettings, Message, FormData } from '../types';
 import { formatCurrency } from '../utils';
 import { calculateStateTax, getStandardDeduction, hasIncomeTax } from '../stateTaxData';
+import { getFilingRequirement, isFilingRequired } from '../nonresidentFilingRequirements';
 import { CloudDownloadIcon } from './Icons';
 import { IncomeAllocationCalendar } from './IncomeAllocationCalendar';
 
@@ -112,15 +113,19 @@ const generatePDF = (results: ResultData[] | null, mnSettings: TaxSettings, form
       return a.localeCompare(b);
     });
 
-  let primaryStateTax = null;
-  if (stateTotals[primaryState] && hasIncomeTax(primaryState)) {
-    const { tax } = calculateStateTax(
-      stateTotals[primaryState].total, 
-      primaryState, 
-      mnSettings.deductionType,
-      Number(mnSettings.itemizedDeduction || 0)
-    );
-    primaryStateTax = tax;
+  // Calculate tax for all states
+  const stateTaxes: Record<string, number> = {};
+  for (const state in stateTotals) {
+    if (hasIncomeTax(state) && stateTotals[state].total > 0) {
+      const { tax } = calculateStateTax(
+        stateTotals[state].total, 
+        state,
+        state === primaryState ? mnSettings.deductionType : 'standard',
+        state === primaryState ? Number(mnSettings.itemizedDeduction || 0) : 0,
+        mnSettings.filingStatus
+      );
+      stateTaxes[state] = tax;
+    }
   }
 
   // Generate calendar HTML for PDF
@@ -356,18 +361,49 @@ const generatePDF = (results: ResultData[] | null, mnSettings: TaxSettings, form
                 </div>
               </div>
               
-              ${isPrimary && primaryStateTax !== null && hasIncomeTax(state) ? `
+              ${stateTaxes[state] !== undefined && stateTaxes[state] > 0 ? `
                 <div class="tax-info">
-                  <p class="tax-owed">Estimated ${state} Income Tax Owed: ${formatCurrency(primaryStateTax)}</p>
+                  <p class="tax-owed">Estimated ${state} Income Tax Owed: ${formatCurrency(stateTaxes[state])}</p>
                 </div>
               ` : ''}
               
-              ${!isPrimary && hasIncomeTax(state) && total > getStandardDeduction(state) ? `
+              ${!isPrimary && hasIncomeTax(state) && total > getStandardDeduction(state) && getStandardDeduction(state) > 0 ? `
                 <div class="warning">
                   ⚠️ Income exceeds ${state} standard deduction (${formatCurrency(getStandardDeduction(state))}).
                   You may owe taxes in ${state}. Consult a tax professional.
                 </div>
               ` : ''}
+              
+              ${(() => {
+                const filingReq = getFilingRequirement(state);
+                const requiresFiling = filingReq ? isFilingRequired(state, total, days) : false;
+                
+                if (!filingReq) return '';
+                
+                const badgeColor = requiresFiling 
+                  ? '#dc2626' 
+                  : filingReq.requiresReturn 
+                    ? '#f59e0b' 
+                    : '#059669';
+                
+                const badgeText = requiresFiling 
+                  ? 'YES' 
+                  : filingReq.requiresReturn 
+                    ? 'MAYBE' 
+                    : 'NO';
+                
+                return `
+                  <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #d1d5db; font-size: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                      <span style="font-weight: 500; color: #374151;">Nonresident Return Required:</span>
+                      <span style="background: ${badgeColor}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 500;">
+                        ${badgeText}
+                      </span>
+                    </div>
+                    <p style="color: #6b7280; font-size: 12px; margin: 0;">${filingReq.description}</p>
+                  </div>
+                `;
+              })()}
             </div>
           `;
         }).join('')}
@@ -557,6 +593,41 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
                               </p>
                             </div>
                           )}
+                          
+                          {/* Nonresident Filing Requirement */}
+                          {(() => {
+                            const filingReq = getFilingRequirement(state);
+                            const requiresFiling = filingReq ? isFilingRequired(state, total, days) : false;
+                            
+                            if (!filingReq) return null;
+                            
+                            return (
+                              <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                                    Nonresident Return Required:
+                                  </span>
+                                  <span className={`badge ${
+                                    requiresFiling 
+                                      ? 'badge-red' 
+                                      : filingReq.requiresReturn 
+                                        ? 'badge-yellow' 
+                                        : 'badge-green'
+                                  }`}>
+                                    {requiresFiling 
+                                      ? 'YES' 
+                                      : filingReq.requiresReturn 
+                                        ? 'MAYBE' 
+                                        : 'NO'
+                                    }
+                                  </span>
+                                </div>
+                                <p className="form-description mt-1 text-xs">
+                                  {filingReq.description}
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
