@@ -413,47 +413,58 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
       )}
 
       {/* Edit modal */}
-      {selectedPeriod !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 w-80">
-            <h3 className="text-lg font-semibold mb-4 text-zinc-900 dark:text-white">
-              Edit Gross Taxable Amount
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Amount ($)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white"
-                  value={editingAmount}
-                  onChange={(e) => setEditingAmount(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleSaveAmount}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedPeriod(null);
-                    setEditingAmount('');
-                  }}
-                  className="flex-1 bg-zinc-300 dark:bg-zinc-600 text-zinc-700 dark:text-zinc-300 px-4 py-2 rounded-md hover:bg-zinc-400 dark:hover:bg-zinc-500"
-                >
-                  Cancel
-                </button>
+      {selectedPeriod !== null && (() => {
+        const selectedPayPeriod = formData.payPeriods?.find(p => p.id === selectedPeriod);
+        return (
+          <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 w-80">
+              <h3 className="text-lg font-semibold mb-2 text-zinc-900 dark:text-white">
+                Edit Gross Taxable Amount
+              </h3>
+              {selectedPayPeriod && (
+                <div className="mb-4 p-3 bg-zinc-50 dark:bg-zinc-700 rounded-md">
+                  <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Pay Period:</p>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {selectedPayPeriod.payPeriodStart} to {selectedPayPeriod.payPeriodEnd}
+                  </p>
+                </div>
+              )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+                    Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white"
+                    value={editingAmount}
+                    onChange={(e) => setEditingAmount(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveAmount}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedPeriod(null);
+                      setEditingAmount('');
+                    }}
+                    className="flex-1 bg-zinc-300 dark:bg-zinc-600 text-zinc-700 dark:text-zinc-300 px-4 py-2 rounded-md hover:bg-zinc-400 dark:hover:bg-zinc-500"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
