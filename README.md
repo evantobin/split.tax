@@ -235,9 +235,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/multi-state-tax-calculator/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/multi-state-tax-calculator/discussions)
-- **Email**: support@example.com
+- **Email**: support@split.tax
 
 ## 🗺️ Roadmap
 

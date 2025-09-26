@@ -19,6 +19,8 @@ interface AppState {
   showSettings: boolean;
   showHowToUse: boolean;
   showImportWizard: boolean;
+  showTermsOfService: boolean;
+  showPrivacyPolicy: boolean;
   wizardStep: number;
   
   // Tax settings

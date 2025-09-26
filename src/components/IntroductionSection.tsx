@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export const IntroductionSection: React.FC = () => {
   return (
@@ -73,9 +74,23 @@ export const IntroductionSection: React.FC = () => {
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-2">
             <strong className="text-zinc-900 dark:text-white">Important:</strong> This tool is for informational purposes only and does not constitute tax advice.
           </p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
             Always consult with a qualified tax professional for your specific situation. State tax laws vary and change frequently.
           </p>
+          <div className="flex flex-wrap gap-4 pt-3 border-t border-zinc-200 dark:border-zinc-600">
+            <Link
+              to="/terms"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors"
+            >
+              Terms of Service
+            </Link>
+            <Link
+              to="/privacy"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors"
+            >
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </div>

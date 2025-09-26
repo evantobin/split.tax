@@ -390,15 +390,15 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
             {formData.payPeriods.map((period) => (
               <div 
                 key={period.id} 
-                className={`flex items-center justify-between p-2 rounded text-xs ${getPayPeriodColor(period.id)}`}
+                className={`flex items-center justify-between p-2 rounded text-xs ${getPayPeriodColor(period.id)} text-zinc-800 dark:text-zinc-200`}
               >
                 <div>
-                  <span className="font-medium">
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
                     {period.payPeriodStart} - {period.payPeriodEnd}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">${period.netPay || '0'}</span>
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">${period.netPay || '0'}</span>
                   <button
                     onClick={() => handleDeletePeriod(period.id)}
                     className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
