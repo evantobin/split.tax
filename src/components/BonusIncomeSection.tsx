@@ -1,7 +1,6 @@
 import React from 'react';
 import type { FormData } from '../types';
 import { TrashIcon, PlusIcon } from './Icons';
-import { StateSelector } from './StateSelector';
 
 interface BonusIncomeSectionProps {
   formData: FormData;

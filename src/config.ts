@@ -1,12 +1,13 @@
 // Configuration constants for the tax calculator
 import { stateTaxConfigs } from './stateTaxData';
+import type { FormData } from './types';
 
 export const CLIENT_ID = '158815926301-2e46taooqll1firpnkq04ajlt9mmaq6o.apps.googleusercontent.com';
 export const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
 export const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
 export const LOCAL_STORAGE_KEY = 'payAllocatorData_React';
 
-export const exampleData = {
+export const exampleData: FormData = {
     primaryState: "MN",
     visitingDates: { start: "2025-01-01", end: "2025-05-31" },
     daysInOtherStates: { "FL": ["2025-01-16", "2025-01-17", "2025-02-10"], "AZ": [] },
@@ -15,9 +16,9 @@ export const exampleData = {
         { id: 2, netPay: 8650.00, payPeriodStart: "2025-02-01", payPeriodEnd: "2025-02-15" }
     ],
     bonuses: [
-        { id: 1, amount: 1000, state: "MN", date: "2025-01-20" },
-        { id: 2, amount: 250, state: "FL", date: "2025-01-30" },
-        { id: 3, amount: 1200, state: "FL", date: "2025-02-14" }
+        { id: 1, amount: 1000, state: "MN", date: "2025-01-20", type: "services-rendered" },
+        { id: 2, amount: 250, state: "FL", date: "2025-01-30", type: "sign-on" },
+        { id: 3, amount: 1200, state: "FL", date: "2025-02-14", type: "services-rendered" }
     ]
 };
 

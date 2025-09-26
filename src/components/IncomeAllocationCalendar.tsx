@@ -98,8 +98,6 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
         
         // Add any bonuses for this specific date
         formData.bonuses.forEach(bonus => {
-          const bonusDate = new Date(bonus.date + 'T00:00:00');
-          
           if (bonus.type === 'sign-on') {
             // Sign-on bonuses appear only on the date received
             if (bonus.date === dateStr) {
