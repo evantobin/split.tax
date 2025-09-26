@@ -577,7 +577,8 @@ export function calculateStateTax(
   taxableIncome: number, 
   stateCode: string, 
   deductionType: 'standard' | 'itemized' = 'standard',
-  itemizedAmount: number = 0
+  itemizedAmount: number = 0,
+  filingStatus: 'single' | 'married' = 'single'
 ): { tax: number; taxableAfterDeductions: number } {
   const config = stateTaxConfigs[stateCode.toUpperCase()];
   
@@ -588,7 +589,9 @@ export function calculateStateTax(
   // Calculate deduction
   let deduction = 0;
   if (deductionType === 'standard') {
-    deduction = config.standardDeduction.single;
+    deduction = filingStatus === 'married' 
+      ? config.standardDeduction.marriedJoint 
+      : config.standardDeduction.single;
   } else {
     deduction = itemizedAmount;
   }

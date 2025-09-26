@@ -320,7 +320,9 @@ export const HomePage: React.FC = () => {
             mnSettings={mnSettings}
             isLoading={isLoading}
             message={message}
+            formData={formData}
           />
+
         </div>
       </div>
 
@@ -340,12 +342,13 @@ export const HomePage: React.FC = () => {
         importCalendarEvents={importCalendarEvents}
       />
 
-      <TaxSettingsModal
-        showSettings={showSettings}
-        setShowSettings={setShowSettings}
-        mnSettings={mnSettings}
-        setMnSettings={setMnSettings}
-      />
+        <TaxSettingsModal
+          showSettings={showSettings}
+          setShowSettings={setShowSettings}
+          mnSettings={mnSettings}
+          setMnSettings={setMnSettings}
+          primaryState={formData.primaryState}
+        />
 
       {/* Toast Notifications */}
       <NotificationsContainer

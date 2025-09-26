@@ -1,4 +1,5 @@
 import React from 'react';
+import { getStandardDeduction, getTaxBrackets } from '../config';
 
 interface HowToUseModalProps {
   showHowToUse: boolean;
@@ -114,13 +115,15 @@ interface TaxSettingsModalProps {
   setShowSettings: (show: boolean) => void;
   mnSettings: any;
   setMnSettings: (settings: any) => void;
+  primaryState: string;
 }
 
 export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
   showSettings,
   setShowSettings,
   mnSettings,
-  setMnSettings
+  setMnSettings,
+  primaryState
 }) => {
   if (!showSettings) return null;
 
@@ -129,7 +132,7 @@ export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
       <div className="card max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="card-header">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Primary State Tax Settings</h2>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">Global Tax Settings</h2>
             <button 
               onClick={() => setShowSettings(false)}
               className="btn-ghost btn-xs"
@@ -143,6 +146,36 @@ export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
           <div className="space-y-4">
             <div>
               <label className="form-label mb-2">
+                Filing Status
+              </label>
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center text-zinc-900 dark:text-white">
+                  <input 
+                    type="radio" 
+                    name="filingStatus"
+                    value="single"
+                    checked={mnSettings.filingStatus === 'single'}
+                    onChange={() => setMnSettings({ ...mnSettings, filingStatus: 'single' })}
+                    className="mr-2"
+                  />
+                  Single
+                </label>
+                <label className="flex items-center text-zinc-900 dark:text-white">
+                  <input 
+                    type="radio" 
+                    name="filingStatus"
+                    value="married"
+                    checked={mnSettings.filingStatus === 'married'}
+                    onChange={() => setMnSettings({ ...mnSettings, filingStatus: 'married' })}
+                    className="mr-2"
+                  />
+                  Married Filing Jointly
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="form-label mb-2">
                 Deduction Type
               </label>
               <div className="flex items-center space-x-4">
@@ -152,7 +185,7 @@ export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
                     name="deductionType"
                     value="standard"
                     checked={mnSettings.deductionType === 'standard'}
-                    onChange={() => setMnSettings((s: any) => ({ ...s, deductionType: 'standard' }))}
+                    onChange={() => setMnSettings({ ...mnSettings, deductionType: 'standard' })}
                     className="mr-2"
                   />
                   Standard
@@ -163,7 +196,7 @@ export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
                     name="deductionType"
                     value="itemized"
                     checked={mnSettings.deductionType === 'itemized'}
-                    onChange={() => setMnSettings((s: any) => ({ ...s, deductionType: 'itemized' }))}
+                    onChange={() => setMnSettings({ ...mnSettings, deductionType: 'itemized' })}
                     className="mr-2"
                   />
                   Itemized
@@ -174,14 +207,17 @@ export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
             {mnSettings.deductionType === 'standard' && (
               <div>
                 <label className="form-label mb-1">
-                  Standard Deduction
+                  Standard Deduction (Read-only)
                 </label>
                 <input 
                   type="number" 
-                  className="form-input" 
-                  value={mnSettings.stdDeduction} 
-                  onChange={e => setMnSettings((s: any) => ({ ...s, stdDeduction: Number(e.target.value) }))}
+                  className="form-input bg-zinc-100 dark:bg-zinc-800" 
+                  value={getStandardDeduction(primaryState, mnSettings.filingStatus)} 
+                  readOnly
                 />
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                  Automatically loaded from tax data for {primaryState}
+                </p>
               </div>
             )}
 
@@ -194,70 +230,38 @@ export const TaxSettingsModal: React.FC<TaxSettingsModalProps> = ({
                   type="number" 
                   className="form-input" 
                   value={mnSettings.itemizedDeduction} 
-                  onChange={e => setMnSettings((s: any) => ({ ...s, itemizedDeduction: e.target.value }))}
+                  onChange={e => setMnSettings({ ...mnSettings, itemizedDeduction: e.target.value })}
                 />
               </div>
             )}
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="form-label">
-                  Tax Brackets
-                </label>
-                <button 
-                  onClick={() => setMnSettings((s: any) => ({ 
-                    ...s, 
-                    brackets: [...s.brackets, { rate: 0, upTo: Infinity }] 
-                  }))}
-                  className="btn-secondary btn-xs"
-                >
-                  + Add Bracket
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                {mnSettings.brackets.map((bracket: any, index: number) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <input 
-                      type="number" 
-                      step="0.0001" 
-                      placeholder="Rate"
-                      className="form-input flex-1" 
-                      value={bracket.rate} 
-                      onChange={e => setMnSettings((s: any) => { 
-                        const newBrackets = [...s.brackets];
-                        newBrackets[index].rate = Number(e.target.value);
-                        return { ...s, brackets: newBrackets };
-                      })}
-                    />
-                    <span className="form-description">rate</span>
-                    
-                    <input 
-                      type="number" 
-                      placeholder="Up to (or leave empty for ∞)"
-                      className="form-input flex-1" 
-                      value={bracket.upTo === Infinity ? '' : bracket.upTo} 
-                      onChange={e => setMnSettings((s: any) => { 
-                        const newBrackets = [...s.brackets];
-                        newBrackets[index].upTo = e.target.value === '' ? Infinity : Number(e.target.value);
-                        return { ...s, brackets: newBrackets };
-                      })}
-                    />
-                    <span className="form-description">up to</span>
-                    
-                    {mnSettings.brackets.length > 1 && (
-                      <button 
-                        onClick={() => setMnSettings((s: any) => ({
-                          ...s, 
-                          brackets: s.brackets.filter((_: any, j: number) => j !== index)
-                        }))}
-                        className="btn-destructive btn-xs"
-                      >
-                        ✕
-                      </button>
-                    )}
+              <label className="form-label mb-2">
+                Tax Brackets (Read-only)
+              </label>
+              <div className="card border-zinc-200 dark:border-zinc-700">
+                <div className="card-body bg-zinc-50 dark:bg-zinc-900/20">
+                  <div className="space-y-2">
+                    {getTaxBrackets(primaryState).map((bracket: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <span className="text-zinc-700 dark:text-zinc-300">
+                          {(bracket.rate * 100).toFixed(2)}% tax rate
+                        </span>
+                        <span className="text-zinc-500 dark:text-zinc-400">
+                          {bracket.upTo === Infinity 
+                            ? 'on income above previous bracket' 
+                            : `up to $${bracket.upTo.toLocaleString()}`
+                          }
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                  <div className="mt-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      Tax brackets are automatically loaded from embedded tax data and cannot be edited.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

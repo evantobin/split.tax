@@ -14,6 +14,7 @@ interface DragState {
   isDragging: boolean;
   startDate: Date | null;
   endDate: Date | null;
+  editingPeriodId?: string | number | null;
 }
 
 const COLORS = [
@@ -131,11 +132,12 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
   };
 
   // Handle mouse down to start dragging
-  const handleMouseDown = (date: Date) => {
+  const handleMouseDown = (date: Date, dayPayPeriodId?: string | number) => {
     setDragState({
       isDragging: true,
       startDate: date,
-      endDate: date
+      endDate: date,
+      editingPeriodId: dayPayPeriodId || null
     });
   };
 
@@ -155,26 +157,39 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
       const startDate = dragState.startDate < dragState.endDate ? dragState.startDate : dragState.endDate;
       const endDate = dragState.startDate < dragState.endDate ? dragState.endDate : dragState.startDate;
 
-      // Create new pay period
-      const newPayPeriod: PayPeriod = {
-        id: Date.now(),
-        netPay: '',
-        payPeriodStart: startDate.toISOString().slice(0, 10),
-        payPeriodEnd: endDate.toISOString().slice(0, 10)
-      };
+      if (dragState.editingPeriodId) {
+        // Edit existing pay period
+        setFormData(draft => {
+          const periodIndex = draft.payPeriods.findIndex(p => p.id === dragState.editingPeriodId);
+          if (periodIndex !== -1) {
+            draft.payPeriods[periodIndex].payPeriodStart = startDate.toISOString().slice(0, 10);
+            draft.payPeriods[periodIndex].payPeriodEnd = endDate.toISOString().slice(0, 10);
+          }
+        });
+        handleToastOnly({ text: 'Pay period dates updated.', type: 'success' });
+      } else {
+        // Create new pay period
+        const newPayPeriod: PayPeriod = {
+          id: Date.now(),
+          netPay: '',
+          payPeriodStart: startDate.toISOString().slice(0, 10),
+          payPeriodEnd: endDate.toISOString().slice(0, 10)
+        };
 
-      setFormData(draft => {
-        if (!draft.payPeriods) draft.payPeriods = [];
-        draft.payPeriods.push(newPayPeriod);
-      });
+        setFormData(draft => {
+          if (!draft.payPeriods) draft.payPeriods = [];
+          draft.payPeriods.push(newPayPeriod);
+        });
 
-      handleToastOnly({ text: 'New pay period created. Click to set the gross taxable amount.', type: 'success' });
+        handleToastOnly({ text: 'New pay period created. Click to set the gross taxable amount.', type: 'success' });
+      }
     }
 
     setDragState({
       isDragging: false,
       startDate: null,
-      endDate: null
+      endDate: null,
+      editingPeriodId: null
     });
   };
 
@@ -279,6 +294,7 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
       <div className="text-sm text-zinc-600 dark:text-zinc-400">
         <p>• Click on a colored day to edit the gross taxable amount</p>
         <p>• Drag across empty days to create a new pay period</p>
+        <p>• Drag across an existing pay period to edit its date range</p>
         <p>• Only weekdays (Monday-Friday) are shown</p>
       </div>
 
@@ -360,7 +376,7 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
                           }
                           ${isInDragSelection ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-600' : ''}
                         `}
-                        onMouseDown={() => handleMouseDown(day.date)}
+                        onMouseDown={() => handleMouseDown(day.date, day.payPeriodId)}
                         onMouseEnter={() => handleMouseEnter(day.date)}
                         onClick={() => handleDayClick(day)}
                       >

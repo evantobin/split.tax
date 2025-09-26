@@ -213,7 +213,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   setWizardStep: (step) => set({ wizardStep: step }),
   
   // Tax settings actions
-  setMnSettings: (settings) => set({ mnSettings: settings }),
+  setMnSettings: (settings) => {
+    set({ mnSettings: { ...get().mnSettings, ...settings } });
+  },
   
   // Google API actions
   setIsSignedIn: (signedIn) => set({ isSignedIn: signedIn }),

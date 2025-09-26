@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FormData, TaxSettings } from '../types';
 import { formatCurrency } from '../utils';
+import { getStandardDeduction, getTaxBrackets } from '../config';
 import { StateSelector } from './StateSelector';
 import { CogIcon } from './Icons';
 
@@ -84,10 +85,10 @@ export const PrimaryLocationSettings: React.FC<PrimaryLocationSettingsProps> = (
                   <h4 className="font-semibold text-zinc-900 dark:text-white mb-1">Primary State Tax Settings</h4>
                   <p className="form-description">
                     {mnSettings.deductionType === 'standard' 
-                      ? `Standard: ${formatCurrency(mnSettings.stdDeduction)}` 
+                      ? `Standard: ${formatCurrency(getStandardDeduction(formData.primaryState, mnSettings.filingStatus))}` 
                       : `Itemized: ${formatCurrency(Number(mnSettings.itemizedDeduction || 0))}`
                     }
-                    {' • '}{mnSettings.brackets.length} bracket{mnSettings.brackets.length > 1 ? 's' : ''}
+                    {` • ${getTaxBrackets(formData.primaryState).length} bracket${getTaxBrackets(formData.primaryState).length > 1 ? 's' : ''}`}
                   </p>
                 </div>
                 <button 

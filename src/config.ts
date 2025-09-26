@@ -22,29 +22,44 @@ export const exampleData = {
 };
 
 export const defaultTaxSettings = {
+    filingStatus: 'single' as const,
     deductionType: 'standard' as const,
-    stdDeduction: 14575,
-    itemizedDeduction: '',
-    brackets: [
-        { rate: 0.0535, upTo: 31270 },
-        { rate: 0.068, upTo: 103110 },
-        { rate: 0.0785, upTo: 192060 },
-        { rate: 0.0985, upTo: Infinity }
-    ]
+    itemizedDeduction: ''
 };
 
-// Function to get tax settings for any state (defaults to MN if state not found)
-export function getTaxSettingsForState(stateCode: string) {
+// Function to get user tax settings for any state
+export function getTaxSettingsForState(stateCode: string, filingStatus: 'single' | 'married' = 'single') {
+    return {
+        ...defaultTaxSettings,
+        filingStatus
+    };
+}
+
+// Helper function to get standard deduction for a state and filing status
+export function getStandardDeduction(stateCode: string, filingStatus: 'single' | 'married' = 'single'): number {
     const config = stateTaxConfigs[stateCode.toUpperCase()];
     if (!config || !config.hasIncomeTax) {
-        // Return MN settings for states without income tax or invalid states
-        return defaultTaxSettings;
+        // Return MN amounts for states without income tax or invalid states
+        return filingStatus === 'married' ? 29900 : 14950;
     }
     
-    return {
-        deductionType: 'standard' as const,
-        stdDeduction: config.standardDeduction.single,
-        itemizedDeduction: '',
-        brackets: config.brackets
-    };
+    return filingStatus === 'married' 
+        ? config.standardDeduction.marriedJoint 
+        : config.standardDeduction.single;
+}
+
+// Helper function to get tax brackets for a state
+export function getTaxBrackets(stateCode: string) {
+    const config = stateTaxConfigs[stateCode.toUpperCase()];
+    if (!config || !config.hasIncomeTax) {
+        // Return MN brackets for states without income tax or invalid states
+        return [
+            { rate: 0.0535, upTo: 32570 },
+            { rate: 0.068, upTo: 106990 },
+            { rate: 0.0785, upTo: 198630 },
+            { rate: 0.0985, upTo: Infinity }
+        ];
+    }
+    
+    return config.brackets;
 }

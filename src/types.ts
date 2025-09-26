@@ -37,10 +37,9 @@ export interface TaxBracket {
 }
 
 export interface TaxSettings {
+  filingStatus: 'single' | 'married';
   deductionType: 'standard' | 'itemized';
-  stdDeduction: number;
   itemizedDeduction: string | number;
-  brackets: TaxBracket[];
 }
 
 export interface Message {
@@ -79,4 +78,17 @@ export interface CalculationResult {
 export interface ResultData {
   period: PayPeriod;
   result: CalculationResult;
+}
+
+export interface FilingStatus {
+  status: 'single' | 'married';
+  standardDeduction: number;
+}
+
+export interface IncomeTaxCalculation {
+  grossIncome: number;
+  filingStatus: 'single' | 'married';
+  standardDeduction: number;
+  taxableIncome: number;
+  estimatedTax: number;
 }
