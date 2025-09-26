@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { copyFileSync } from 'fs'
-import { join } from 'path'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,9 +13,20 @@ export default defineConfig({
     {
       name: 'copy-index-to-404',
       closeBundle() {
-        const distPath = join(__dirname, 'dist')
-        copyFileSync(join(distPath, 'index.html'), join(distPath, '404.html'))
-        console.log('✅ Copied index.html to 404.html for GitHub Pages SPA routing')
+        try {
+          const distPath = path.resolve('dist')
+          const indexPath = path.join(distPath, 'index.html')
+          const notFoundPath = path.join(distPath, '404.html')
+          
+          if (fs.existsSync(indexPath)) {
+            fs.copyFileSync(indexPath, notFoundPath)
+            // eslint-disable-next-line no-console
+            console.log('✅ Copied index.html to 404.html for GitHub Pages SPA routing')
+          }
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.warn('⚠️ Failed to copy index.html to 404.html:', error)
+        }
       }
     }
   ],
