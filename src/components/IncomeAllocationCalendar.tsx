@@ -343,7 +343,7 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
             return (
               <div 
                 key={`${weekIndex}-${dayIndex}`} 
-                className="h-16 border border-transparent"
+                className="h-20 border border-transparent"
               ></div>
             );
           }
@@ -352,7 +352,7 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
             <div
               key={`${weekIndex}-${dayIndex}`}
               className={`
-                h-16 border rounded p-1 text-xs
+                h-20 border rounded p-1 text-xs
                 ${getStateColor(allocation)}
                 transition-all duration-150
               `}
