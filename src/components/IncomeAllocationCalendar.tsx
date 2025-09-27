@@ -55,6 +55,49 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
       }
     }
 
+    // Pre-calculate bonus distributions for services-rendered bonuses
+    const bonusDistributions = new Map<string, number>(); // dateStr -> bonus amount
+    
+    // Calculate bonus distributions once for each unique bonus, not per pay period
+    const processedBonuses = new Set<string>();
+    
+    formData.bonuses.forEach(bonus => {
+      if (bonus.type === 'services-rendered') {
+        const bonusKey = `${bonus.id}-${bonus.date}-${bonus.amount}`;
+        if (processedBonuses.has(bonusKey)) return; // Skip if already processed
+        processedBonuses.add(bonusKey);
+        
+        // Use the bonus period dates if provided, otherwise use a default range
+        const bonusPeriodStart = bonus.bonusPeriodStart 
+          ? new Date(bonus.bonusPeriodStart + 'T00:00:00') 
+          : new Date(bonus.date + 'T00:00:00'); // Fallback to bonus date if no period specified
+        const bonusPeriodEnd = bonus.bonusPeriodEnd 
+          ? new Date(bonus.bonusPeriodEnd + 'T00:00:00') 
+          : new Date(bonus.date + 'T00:00:00'); // Fallback to bonus date if no period specified
+        
+        // Calculate total working days in the entire bonus period (not limited to pay periods)
+        let totalBonusPeriodWorkingDays = 0;
+        const allWorkingDaysInBonusPeriod: string[] = [];
+        
+        for (let bd = new Date(bonusPeriodStart); 
+             bd <= bonusPeriodEnd; 
+             bd.setDate(bd.getDate() + 1)) {
+          if (!isWeekday(bd)) continue;
+          
+          totalBonusPeriodWorkingDays++;
+          allWorkingDaysInBonusPeriod.push(bd.toISOString().split('T')[0]);
+        }
+        
+        // Distribute bonus equally across ALL working days in the bonus period
+        if (totalBonusPeriodWorkingDays > 0) {
+          const dailyBonusAmount = parseFloat(String(bonus.amount || 0)) / totalBonusPeriodWorkingDays;
+          allWorkingDaysInBonusPeriod.forEach(dateStr => {
+            bonusDistributions.set(dateStr, (bonusDistributions.get(dateStr) || 0) + dailyBonusAmount);
+          });
+        }
+      }
+    });
+
     // Process each pay period
     results.forEach(({ period }) => {
       const ppStart = new Date(period.payPeriodStart + 'T00:00:00');
@@ -96,43 +139,17 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
         // Calculate regular income for this day
         regularIncome = dailyRegularRate;
         
-        // Add any bonuses for this specific date
+        // Add pre-calculated services-rendered bonus for this date
+        bonusIncome += bonusDistributions.get(dateStr) || 0;
+        
+        // Add any sign-on bonuses for this specific date
         formData.bonuses.forEach(bonus => {
           if (bonus.type === 'sign-on') {
             // Sign-on bonuses appear only on the date received
             if (bonus.date === dateStr) {
               bonusIncome += parseFloat(String(bonus.amount || 0));
             }
-          } else if (bonus.type === 'services-rendered') {
-            // Services rendered bonuses are distributed across the bonus period
-            const bonusPeriodStart = bonus.bonusPeriodStart 
-              ? new Date(bonus.bonusPeriodStart + 'T00:00:00') 
-              : new Date(period.payPeriodStart + 'T00:00:00');
-            const bonusPeriodEnd = bonus.bonusPeriodEnd 
-              ? new Date(bonus.bonusPeriodEnd + 'T00:00:00') 
-              : new Date(period.payPeriodEnd + 'T00:00:00');
-            
-            // Check if current date is within bonus period
-            if (d >= bonusPeriodStart && d <= bonusPeriodEnd) {
-              // Calculate total working days in bonus period that intersect with this pay period
-              let bonusPeriodWorkingDays = 0;
-              for (let bd = new Date(Math.max(bonusPeriodStart.getTime(), ppStart.getTime())); 
-                   bd <= new Date(Math.min(bonusPeriodEnd.getTime(), ppEnd.getTime())); 
-                   bd.setDate(bd.getDate() + 1)) {
-                if (!isWeekday(bd)) continue;
-                
-                const bonusDateStr = bd.toISOString().split('T')[0];
-                if (otherStateDaysMap.has(bonusDateStr) || (bd >= primaryVisitStart && bd <= primaryVisitEnd)) {
-                  bonusPeriodWorkingDays++;
-                }
-              }
-              
-              // Distribute bonus amount across working days
-              if (bonusPeriodWorkingDays > 0) {
-                bonusIncome += parseFloat(String(bonus.amount || 0)) / bonusPeriodWorkingDays;
-              }
-            }
-          } else {
+          } else if (!bonus.type) {
             // Fallback for bonuses without type (backwards compatibility)
             if (bonus.date === dateStr) {
               bonusIncome += parseFloat(String(bonus.amount || 0));
@@ -346,14 +363,21 @@ export const IncomeAllocationCalendar: React.FC<IncomeAllocationCalendarProps> =
               <div className="text-zinc-700 dark:text-zinc-300 font-medium text-[10px]">
                 {allocation.state}
               </div>
-              <div className="text-zinc-600 dark:text-zinc-400 text-[9px] leading-tight">
-                {allocation.totalIncome > 0 && formatCurrency(allocation.totalIncome)}
+              <div className="text-zinc-600 dark:text-zinc-400 text-[8px] leading-tight">
+                {allocation.regularIncome > 0 && (
+                  <div>+{formatCurrency(allocation.regularIncome)} wages</div>
+                )}
+                {allocation.bonusIncome > 0 && (
+                  <div className="text-purple-700 dark:text-purple-300">
+                    +{formatCurrency(allocation.bonusIncome)} bonus
+                  </div>
+                )}
+                {allocation.totalIncome > 0 && (
+                  <div className="font-medium text-zinc-700 dark:text-zinc-200 border-t border-zinc-300 dark:border-zinc-600 pt-0.5 mt-0.5">
+                    {formatCurrency(allocation.totalIncome)} total
+                  </div>
+                )}
               </div>
-              {allocation.bonusIncome > 0 && (
-                <div className="text-purple-700 dark:text-purple-300 text-[8px]">
-                  +{formatCurrency(allocation.bonusIncome)} bonus
-                </div>
-              )}
             </div>
           );
         })}

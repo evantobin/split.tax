@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import type { PayPeriod } from '../types';
 import { useAppStore } from '../store';
+import { parseUTCDate, toISODateString } from '../utils';
 
 interface PayPeriodCalendarProps {}
 
@@ -52,11 +53,12 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
     const { visitingDates } = formData;
     if (!visitingDates?.start || !visitingDates?.end) return [];
 
-    const startDate = new Date(visitingDates.start);
-    const endDate = new Date(visitingDates.end);
+    // Parse dates consistently as UTC to avoid timezone issues
+    const startDate = parseUTCDate(visitingDates.start);
+    const endDate = parseUTCDate(visitingDates.end);
     const days: CalendarDay[] = [];
 
-    // Get the first and last day of the current month
+    // Get the first and last day of the current month (also in local time)
     const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
     const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
@@ -73,8 +75,8 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
       if (isWeekday) {
         // Find which pay period this day belongs to
         const payPeriodId = formData.payPeriods?.find(period => {
-          const periodStart = new Date(period.payPeriodStart + 'T00:00:00');
-          const periodEnd = new Date(period.payPeriodEnd + 'T23:59:59');
+          const periodStart = parseUTCDate(period.payPeriodStart);
+          const periodEnd = parseUTCDate(period.payPeriodEnd);
           return currentDate >= periodStart && currentDate <= periodEnd;
         })?.id;
 
@@ -162,8 +164,8 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
         setFormData(draft => {
           const periodIndex = draft.payPeriods.findIndex(p => p.id === dragState.editingPeriodId);
           if (periodIndex !== -1) {
-            draft.payPeriods[periodIndex].payPeriodStart = startDate.toISOString().slice(0, 10);
-            draft.payPeriods[periodIndex].payPeriodEnd = endDate.toISOString().slice(0, 10);
+            draft.payPeriods[periodIndex].payPeriodStart = toISODateString(startDate);
+            draft.payPeriods[periodIndex].payPeriodEnd = toISODateString(endDate);
           }
         });
         handleToastOnly({ text: 'Pay period dates updated.', type: 'success' });
@@ -172,8 +174,8 @@ export const PayPeriodCalendar: React.FC<PayPeriodCalendarProps> = () => {
         const newPayPeriod: PayPeriod = {
           id: Date.now(),
           netPay: '',
-          payPeriodStart: startDate.toISOString().slice(0, 10),
-          payPeriodEnd: endDate.toISOString().slice(0, 10)
+          payPeriodStart: toISODateString(startDate),
+          payPeriodEnd: toISODateString(endDate)
         };
 
         setFormData(draft => {

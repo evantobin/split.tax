@@ -6,6 +6,16 @@ import { getStandardDeduction, getTaxBrackets } from './config';
 export const formatCurrency = (amount: number): string => 
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
 
+// Parse date string as UTC to avoid timezone issues - all dates in this app are date-only
+export const parseUTCDate = (dateString: string): Date => {
+    return new Date(dateString + 'T00:00:00.000Z');
+};
+
+// Convert Date to ISO date string (YYYY-MM-DD)  
+export const toISODateString = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+};
+
 // --- TAX CALCULATION LOGIC ---
 
 export const calculateMnTax = (grossTaxable: number, settings: TaxSettings, stateCode: string = 'MN'): number => {
@@ -42,17 +52,17 @@ export function calculateAllocation(
     globalBonuses: Bonus[]
 ): CalculationResult {
     const { netPay, payPeriodStart, payPeriodEnd } = data;
-    const ppStart = new Date(payPeriodStart + 'T00:00:00');
-    const ppEnd = new Date(payPeriodEnd + 'T00:00:00');
-    const primaryVisitStart = new Date(visitingDates.start + 'T00:00:00');
-    const primaryVisitEnd = new Date(visitingDates.end + 'T00:00:00');
+    const ppStart = parseUTCDate(payPeriodStart);
+    const ppEnd = parseUTCDate(payPeriodEnd);
+    const primaryVisitStart = parseUTCDate(visitingDates.start);
+    const primaryVisitEnd = parseUTCDate(visitingDates.end);
 
     if (isNaN(ppStart.getTime()) || isNaN(ppEnd.getTime())) {
         throw new Error(`Invalid pay period date for ${payPeriodStart}`);
     }
 
     const periodBonuses = globalBonuses.filter(b => {
-        const bonusDate = new Date(b.date + 'T00:00:00');
+        const bonusDate = parseUTCDate(b.date);
         return b.date && bonusDate >= ppStart && bonusDate <= ppEnd;
     });
 
@@ -67,7 +77,7 @@ export function calculateAllocation(
     for (const state in daysInOtherStates) {
         for (const dateStr of daysInOtherStates[state]) {
             if(dateStr) {
-                const d = new Date(dateStr + 'T00:00:00');
+                const d = parseUTCDate(dateStr);
                 if (isWeekday(d)) {
                     otherStateDaysMap.set(dateStr, state);
                 }
@@ -117,8 +127,8 @@ export function calculateAllocation(
         
         if (bonus.type === 'sign-on') {
             // Sign-on bonuses are applied to the state where the person was working on the date received
-            const bonusDate = new Date(bonus.date + 'T00:00:00');
-            const dateStr = bonusDate.toISOString().split('T')[0];
+            const bonusDate = parseUTCDate(bonus.date);
+            const dateStr = toISODateString(bonusDate);
             
             let workingState = primaryState; // Default to primary state
             if (otherStateDaysMap.has(dateStr)) {
@@ -133,13 +143,23 @@ export function calculateAllocation(
             allocations[workingState].bonus += bonusAmount;
         } else if (bonus.type === 'services-rendered') {
             // Services rendered bonuses are split based on days worked in each state during the bonus period
-            const bonusPeriodStart = bonus.bonusPeriodStart ? new Date(bonus.bonusPeriodStart + 'T00:00:00') : ppStart;
-            const bonusPeriodEnd = bonus.bonusPeriodEnd ? new Date(bonus.bonusPeriodEnd + 'T00:00:00') : ppEnd;
+            const bonusPeriodStart = bonus.bonusPeriodStart ? parseUTCDate(bonus.bonusPeriodStart) : ppStart;
+            const bonusPeriodEnd = bonus.bonusPeriodEnd ? parseUTCDate(bonus.bonusPeriodEnd) : ppEnd;
             
-            // Count days worked in each state during the bonus period
+            // First, count ALL weekdays in the entire bonus period (not just the intersection with pay period)
+            let totalBonusPeriodWeekdays = 0;
+            for (let d = new Date(bonusPeriodStart); d <= bonusPeriodEnd; d.setDate(d.getDate() + 1)) {
+                if (isWeekday(d)) {
+                    totalBonusPeriodWeekdays++;
+                }
+            }
+            
+            // Calculate daily bonus rate based on entire bonus period
+            const dailyBonusRate = totalBonusPeriodWeekdays > 0 ? bonusAmount / totalBonusPeriodWeekdays : 0;
+            
+            // Now count days worked in each state during the intersection of bonus period and pay period
             let bonusPeriodDaysInPrimary = 0;
             const bonusPeriodDaysInOtherStates: Record<string, number> = {};
-            let totalBonusPeriodDays = 0;
             
             for (let d = new Date(Math.max(bonusPeriodStart.getTime(), ppStart.getTime())); 
                  d <= new Date(Math.min(bonusPeriodEnd.getTime(), ppEnd.getTime())); 
@@ -150,18 +170,16 @@ export function calculateAllocation(
                 if (otherStateDaysMap.has(dateStr)) {
                     const state = otherStateDaysMap.get(dateStr)!;
                     bonusPeriodDaysInOtherStates[state] = (bonusPeriodDaysInOtherStates[state] || 0) + 1;
-                    totalBonusPeriodDays++;
                 } else if (d >= primaryVisitStart && d <= primaryVisitEnd) {
                     bonusPeriodDaysInPrimary++;
-                    totalBonusPeriodDays++;
                 }
             }
             
-            // Allocate bonus proportionally to each state based on days worked
-            if (totalBonusPeriodDays > 0) {
+            // Allocate bonus based on daily rate times days worked in each state during this pay period
+            if (dailyBonusRate > 0) {
                 // Allocate to primary state
                 if (bonusPeriodDaysInPrimary > 0) {
-                    const primaryAllocation = (bonusPeriodDaysInPrimary / totalBonusPeriodDays) * bonusAmount;
+                    const primaryAllocation = bonusPeriodDaysInPrimary * dailyBonusRate;
                     if (!allocations[primaryState]) {
                         allocations[primaryState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
                     }
@@ -170,23 +188,17 @@ export function calculateAllocation(
                 
                 // Allocate to other states
                 for (const state in bonusPeriodDaysInOtherStates) {
-                    const stateAllocation = (bonusPeriodDaysInOtherStates[state] / totalBonusPeriodDays) * bonusAmount;
+                    const stateAllocation = bonusPeriodDaysInOtherStates[state] * dailyBonusRate;
                     if (!allocations[state]) {
                         allocations[state] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
                     }
                     allocations[state].bonus += stateAllocation;
                 }
-            } else {
-                // If no working days found in bonus period, allocate to primary state
-                if (!allocations[primaryState]) {
-                    allocations[primaryState] = { days: 0, regularPay: 0, bonus: 0, total: 0 };
-                }
-                allocations[primaryState].bonus += bonusAmount;
             }
         } else {
             // Fallback for bonuses without type (backwards compatibility)
-            const bonusDate = new Date(bonus.date + 'T00:00:00');
-            const dateStr = bonusDate.toISOString().split('T')[0];
+            const bonusDate = parseUTCDate(bonus.date);
+            const dateStr = toISODateString(bonusDate);
             
             // Determine which state the person was working in on this date
             let workingState = '';
